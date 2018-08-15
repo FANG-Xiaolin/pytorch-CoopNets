@@ -37,6 +37,7 @@ The Imagenet-scene dataset will be downloaded and saved to `./data` directory. (
 2. Train a model by
     
  
+ 
     $ python main.py
     
 E.g.
