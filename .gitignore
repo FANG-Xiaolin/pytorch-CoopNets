@@ -6,6 +6,6 @@ data/*
 data
 result_images
 checkpoint
-*.png
+
 
 
