@@ -157,12 +157,11 @@ class CoopNets(nn.Module):
     def langevin_dynamics_generator(self,z):
         criterian=nn.MSELoss()
         for i in range(self.opts.langevin_step_num_gen):
-            noise=torch.randn(size=(self.num_chain,self.opts.z_size)).cuda()
+            noise=Variable(torch.randn(size=(self.num_chain,self.opts.z_size)).cuda())
             z=Variable(z,requires_grad=True)
             gen_res=self.generator(z)
             gen_loss=1.0/(2.0* self.opts.sigma_gen*self.opts.sigma_gen)*criterian(gen_res,z)
             gen_loss.backward()
-            # nn.utils.clip_grad_norm_(self.generator.parameters(), 0.5)
             grad=self.generator.z.grad 
             z=z-0.5*self.opts.langevin_step_size_gen*self.opts.langevin_step_size_gen*(z+grad)
             if self.opts.with_noise == True:
@@ -255,7 +254,7 @@ class CoopNets(nn.Module):
                 obs_feature=self.descriptor(obs_data)
                 revised_feature=self.descriptor(revised)
 
-                des_loss=(revised_feature.mean(0)-obs_feature.mean(0)).sum()
+                des_loss=(revised_feature.mean(0)-obs_feature.mean(0)).mean()
 
                 des_optimizer.zero_grad()
                 des_loss.backward()
@@ -266,7 +265,7 @@ class CoopNets(nn.Module):
                 if self.opts.langevin_step_num_gen>0:
                     gen_res=self.generator(z)
                 # gen_res=gen_res.detach()
-                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*((revised-gen_res)**2).sum()
+                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*((revised-gen_res)**2).mean()
 
                 gen_optimizer.zero_grad()
                 gen_loss.backward()
