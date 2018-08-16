@@ -1,6 +1,8 @@
 import os
 import time
 
+import torchvision
+import torchvision.transforms as transforms
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -8,7 +10,7 @@ import numpy as np
 import math
 
 # from model.utils.data_io import *
-from model.utils.data_io import DataSet,saveSampleResults
+from utils.data_io import DataSet,saveSampleResults
 
 class Descriptor(nn.Module):
     def __init__(self):
@@ -154,15 +156,17 @@ class CoopNets(nn.Module):
             opts.img_size = 32
             print ('train on cifar. img_size: {:d}'.format(opts.img_size))
 
-    def langevin_dynamics_generator(self,z):
+    def langevin_dynamics_generator(self,z,obs):
         criterian=nn.MSELoss()
         for i in range(self.opts.langevin_step_num_gen):
-            noise=Variable(torch.randn(size=(self.num_chain,self.opts.z_size)).cuda())
+            noise=Variable(torch.randn(self.num_chain,self.opts.z_size,1,1).cuda())
             z=Variable(z,requires_grad=True)
             gen_res=self.generator(z)
-            gen_loss=1.0/(2.0* self.opts.sigma_gen*self.opts.sigma_gen)*criterian(gen_res,z)
+            gen_loss=1.0/(2.0* self.opts.sigma_gen*self.opts.sigma_gen)*((gen_res-obs)**2).mean()
             gen_loss.backward()
-            grad=self.generator.z.grad 
+            grad=z.grad
+            # print ('y is : '+str(gen_res[0]))
+            # print ('y_grad is : '+str(grad[0]))
             z=z-0.5*self.opts.langevin_step_size_gen*self.opts.langevin_step_size_gen*(z+grad)
             if self.opts.with_noise == True:
                z+=self.opts.langevin_step_size_gen*noise
@@ -177,6 +181,8 @@ class CoopNets(nn.Module):
             x_feature=self.descriptor(x)
             x_feature.backward(torch.ones(144,100).cuda())
             grad=x.grad
+            # print ('x is : '+str(x[0]))
+            # print ('x_grad is : '+str(grad[0]))
             x=x-0.5*self.opts.langevin_step_size_des*self.opts.langevin_step_size_des*\
                 (x/self.opts.sigma_des/self.opts.sigma_des-grad)
             if self.opts.with_noise:
@@ -188,32 +194,37 @@ class CoopNets(nn.Module):
             self.descriptor=torch.load(self.opts.ckpt_des)
             print ('Loading Descriptor from '+self.opts.ckpt_des+'...')
         else:
-            if self.opts.set == 'scene':
+            if self.opts.set == 'scene' or self.opts.set=='lsun':
                 self.descriptor=Descriptor().cuda()
                 print ('Loading Descriptor without initialization...')
             elif self.opts.set=='cifar':
                 self.descriptor=Descriptor_cifar().cuda()
                 print ('Loading Descriptor_cifar without initialization...')
             else:
-                raise NotImplementedError('The set should be either scene or cifar currently')
+                raise NotImplementedError('The set should be either scene, lsun, or cifar')
 
         if self.opts.ckpt_gen!=None and self.opts.ckpt_gen!='None':
             self.generator=torch.load(self.opts.ckpt_gen)
             print ('Loading Generator from '+ self.opts.ckpt_gen+'...')
         else:
-            if self.opts.set=='scene':
+            if self.opts.set=='scene' or self.opts.set=='lsun':
                 self.generator=Generator().cuda()
                 print ('Loading Generator without initialization...')
             elif self.opts.set=='cifar':
                 self.generator=Generator_cifar().cuda()
                 print ('Loading Generator_cifar without initialization...')
             else:
-                raise NotImplementedError('The set should be either scene or cifar currently')
+                raise NotImplementedError('The set should be either scene, lsun or cifar')
 
 
 
         batch_size=self.opts.batch_size
-        train_data=DataSet(os.path.join(self.opts.data_path,self.opts.category),image_size=self.opts.img_size)
+        if self.opts.set=='scene' or self.opts.set=='cifar':
+            train_data=DataSet(os.path.join(self.opts.data_path,self.opts.category),image_size=self.opts.img_size)
+        else:
+            train_data=torchvision.datasets.LSUN(root='/oasis/scratch/comet/kennyxie/temp_project/data/bedroom_train_lmdb',
+                                                 classes='train', transform=transforms.Compose([transforms.ToTensor(),
+                                                                                                transforms.Resize(self.img_size)]))
         num_batches=int(math.ceil(len(train_data)/batch_size))
 
         # sample_results = np.random.randn(self.num_chain * num_batches, self.opts.img_size, self.opts.img_size, 3)
@@ -248,7 +259,7 @@ class CoopNets(nn.Module):
                     revised=self.langevin_dynamics_descriptor(gen_res)
                 #G1
                 if self.opts.langevin_step_num_gen>0:
-                    z=self.langevin_dynamics_generator(z)
+                    z=self.langevin_dynamics_generator(z,obs_data)
 
                 #D2
                 obs_feature=self.descriptor(obs_data)
@@ -292,13 +303,13 @@ class CoopNets(nn.Module):
 
 
             #python 3
-            print ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
-                    'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
-                                           end_time - start_time),file=logfile)
+            # print ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
+            #         'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
+            #                                end_time - start_time),file=logfile)
             #python 2.7
-            #print >> logfile, ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
-             #    'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
-              #                          end_time - start_time))
+            print >> logfile, ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
+                'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
+                                       end_time - start_time))
 
 
             if epoch%self.opts.log_epoch==0:
