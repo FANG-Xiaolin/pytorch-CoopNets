@@ -299,7 +299,7 @@ class CoopNets(nn.Module):
 
 
             try:
-                col_num=int((self.opts.batch_size)**0.5)
+                col_num=self.opts.nCol
                 saveSampleResults(obs_data.cpu().data[:col_num*col_num], "%s/observed.png", col_num=col_num)
             except:
                 print ('Error when saving obs_data. Skip.')
