@@ -336,6 +336,8 @@ class CoopNets(nn.Module):
         print ('Test on '+self.opts.ckpt_gen)
         generator=torch.load(self.opts.ckpt_gen)
 
+        if not os.path.exists(self.opts.output_dir):
+            os.makedirs(self.opts.output_dir)
 
         for i in range(self.opts.test_size):
             print ('Generator [{:03d}/{:03d}] images...'.format(i+1,self.opts.test_size))
