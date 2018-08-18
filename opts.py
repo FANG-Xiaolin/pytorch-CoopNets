@@ -9,7 +9,7 @@ class opts():
         self.parser.add_argument('-num_epoch', type=int, default=300, help='training epochs')
         self.parser.add_argument('-batch_size', type=int, default=100, help='training batch size')
         self.parser.add_argument('-test_size', type=int, default=1, help='How many images to generate during testing')
-        self.parser.add_argument('-test', help='add `-test` for testing')
+        self.parser.add_argument('-test', action = 'store_true', help='add `-test` for testing')
         self.parser.add_argument('-nRow', type=int, default=12, help='how many rows of images in the output')
         self.parser.add_argument('-nCol', type=int, default=12, help='how many columns of images in the output')
         self.parser.add_argument('-img_size', type=int, default=64, help='output image size')
