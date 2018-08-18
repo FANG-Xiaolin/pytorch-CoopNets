@@ -9,7 +9,7 @@ from torch.autograd import Variable
 import numpy as np
 import math
 
-from utils.data_io import DataSet,saveSampleResults
+from model.utils.data_io import DataSet,saveSampleResults
 
 class Descriptor(nn.Module):
     def __init__(self,opt):
@@ -309,13 +309,13 @@ class CoopNets(nn.Module):
 
 
             #python 3
-            # print ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
-            #         'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
-            #                                end_time - start_time),file=logfile)
+            print ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
+                    'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
+                                           end_time - start_time),file=logfile)
             #python 2.7
-            print >> logfile, ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
-                'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
-                                       end_time - start_time))
+            # print >> logfile, ('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
+            #     'time: {:.2f}s'.format(epoch,self.opts.num_epoch, np.mean(des_loss_epoch), np.mean(gen_loss_epoch), np.mean(recon_loss_epoch),
+            #                            end_time - start_time))
 
 
             if epoch%self.opts.log_epoch==0:
