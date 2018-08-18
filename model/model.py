@@ -9,16 +9,15 @@ from torch.autograd import Variable
 import numpy as np
 import math
 
-# from model.utils.data_io import *
 from utils.data_io import DataSet,saveSampleResults
 
 class Descriptor(nn.Module):
-    def __init__(self):
+    def __init__(self,opt):
         super(Descriptor,self).__init__()
         self.conv1=nn.Conv2d(3,64,kernel_size=5,stride=2,padding=1)
         self.conv2=nn.Conv2d(64,128,kernel_size=3,stride=2,padding=1)
         self.conv3=nn.Conv2d(128,256,kernel_size=3,stride=1,padding=1)
-        self.fc=nn.Linear(16*16*256,100)
+        self.fc=nn.Linear(16*16*256,opt.z_size)
         self.leakyrelu=nn.LeakyReLU()
 
     def forward(self,x):
@@ -34,9 +33,9 @@ class Descriptor(nn.Module):
         return out
 
 class Generator(nn.Module):
-    def __init__(self):
+    def __init__(self,opt):
         super(Generator,self).__init__()
-        self.convt1=nn.ConvTranspose2d(100,512,kernel_size=4,stride=1,padding=0)
+        self.convt1=nn.ConvTranspose2d(opt.z_size,512,kernel_size=4,stride=1,padding=0)
         self.convt2=nn.ConvTranspose2d(512,256,kernel_size=5,stride=2,padding=2,output_padding=1)
         self.convt3=nn.ConvTranspose2d(256,128,kernel_size=5,stride=2,padding=2,output_padding=1)
         self.convt4=nn.ConvTranspose2d(128,64,kernel_size=5,stride=2,padding=2,output_padding=1)
@@ -67,7 +66,7 @@ class Generator(nn.Module):
         return out
 
 class Descriptor_cifar(nn.Module):
-    def __init__(self):
+    def __init__(self,opt):
         super(Descriptor_cifar,self).__init__()
 #        self.conv1=nn.Conv2d(3,64,kernel_size=5,stride=2,padding=1)
 #        self.conv2=nn.Conv2d(64,128,kernel_size=3,stride=2,padding=1)
@@ -79,7 +78,7 @@ class Descriptor_cifar(nn.Module):
         self.conv2=nn.Conv2d(64,128,kernel_size=5,stride=2,padding=2)
         self.conv3=nn.Conv2d(128,256,kernel_size=5,stride=2,padding=2)
         self.conv4=nn.Conv2d(256,512,kernel_size=5,stride=2,padding=2)
-        self.fc=nn.Linear(2*2*512,100)
+        self.fc=nn.Linear(2*2*512,opt.z_size)
         self.leakyrelu=nn.LeakyReLU()
 
 
@@ -100,8 +99,9 @@ class Descriptor_cifar(nn.Module):
         return out
 
 class Generator_cifar(nn.Module):
-    def __init__(self):
+    def __init__(self,opt):
         super(Generator_cifar,self).__init__()
+        self.opt=opt
 #        self.convt1=nn.ConvTranspose2d(100,256,kernel_size=4,stride=1,padding=0)
 #        self.convt2=nn.ConvTranspose2d(256,128,kernel_size=5,stride=2,padding=2,output_padding=1)
 #        self.convt3=nn.ConvTranspose2d(128,64,kernel_size=5,stride=2,padding=2,output_padding=1)
@@ -112,7 +112,7 @@ class Generator_cifar(nn.Module):
 #        self.leakyrelu=nn.LeakyReLU()
 #        self.tanh=nn.Tanh()
 
-        self.fc=nn.Linear(100,2048)
+        self.fc=nn.Linear(opt.z_size,2048)
         self.convt1=nn.ConvTranspose2d(512,256,kernel_size=5,stride=2,padding=2,output_padding=1)
         self.convt2=nn.ConvTranspose2d(256,128,kernel_size=5,stride=2,padding=2,output_padding=1)
         self.convt3=nn.ConvTranspose2d(128,64,kernel_size=5,stride=2,padding=2,output_padding=1)
@@ -126,7 +126,7 @@ class Generator_cifar(nn.Module):
     def forward(self,z):
         self.z=z
 
-        z=z.view(-1,100)        
+        z=z.view(-1,self.opt.z_size)
         out=self.fc(z)
         out=out.reshape(-1,512,2,2)
 
@@ -152,21 +152,25 @@ class CoopNets(nn.Module):
         self.opts=opts
         if opts.with_noise==True:
             print ('Do Langevin with noise')
+        else:
+            print ('Do Langevin without noise')
         if opts.set == 'cifar':
             opts.img_size = 32
             print ('train on cifar. img_size: {:d}'.format(opts.img_size))
 
     def langevin_dynamics_generator(self,z,obs):
-        criterian=nn.MSELoss()
+        obs=obs.detach()
+        criterian=nn.MSELoss(size_average=False,reduce=True)
         for i in range(self.opts.langevin_step_num_gen):
             noise=Variable(torch.randn(self.num_chain,self.opts.z_size,1,1).cuda())
             z=Variable(z,requires_grad=True)
             gen_res=self.generator(z)
-            gen_loss=1.0/(2.0* self.opts.sigma_gen*self.opts.sigma_gen)*((gen_res-obs)**2).mean()
+            gen_loss=1.0/(2.0* self.opts.sigma_gen*self.opts.sigma_gen)*criterian(gen_res,obs)
             gen_loss.backward()
             grad=z.grad
-            # print ('y is : '+str(gen_res[0]))
-            # print ('y_grad is : '+str(grad[0]))
+            if i==0:
+                print ('z is : '+str(z[0].view(1,-1)))
+                print ('z_grad is : '+str(grad[0].view(1,-1)))
             z=z-0.5*self.opts.langevin_step_size_gen*self.opts.langevin_step_size_gen*(z+grad)
             if self.opts.with_noise == True:
                z+=self.opts.langevin_step_size_gen*noise
@@ -179,7 +183,7 @@ class CoopNets(nn.Module):
             #clone it and turn x into a leaf variable so the grad won't be thrown away
             x=Variable(x.data,requires_grad=True)
             x_feature=self.descriptor(x)
-            x_feature.backward(torch.ones(144,100).cuda())
+            x_feature.backward(torch.ones(self.num_chain).cuda())
             grad=x.grad
             # print ('x is : '+str(x[0]))
             # print ('x_grad is : '+str(grad[0]))
@@ -222,9 +226,9 @@ class CoopNets(nn.Module):
         if self.opts.set=='scene' or self.opts.set=='cifar':
             train_data=DataSet(os.path.join(self.opts.data_path,self.opts.category),image_size=self.opts.img_size)
         else:
-            train_data=torchvision.datasets.LSUN(root='/oasis/scratch/comet/kennyxie/temp_project/data/bedroom_train_lmdb',
-                                                 classes='train', transform=transforms.Compose([transforms.ToTensor(),
-                                                                                                transforms.Resize(self.img_size)]))
+            train_data=torchvision.datasets.LSUN(root=self.opts.data_path,
+                                                 classes=['bedroom_train'], transform=transforms.Compose([transforms.Resize(self.img_size),
+                                                                                                          transforms.ToTensor(),]))
         num_batches=int(math.ceil(len(train_data)/batch_size))
 
         # sample_results = np.random.randn(self.num_chain * num_batches, self.opts.img_size, self.opts.img_size, 3)
@@ -245,13 +249,13 @@ class CoopNets(nn.Module):
                 if (i+1)*batch_size>len(train_data):
                     continue
                 obs_data=train_data[i*batch_size:min((i+1)*batch_size,len(train_data))]
-                obs_data=Variable(torch.Tensor(obs_data).cuda(),requires_grad=True)
+                # obs_data=Variable(torch.Tensor(obs_data).cuda())#,requires_grad=True
 
                 #G0
-                z=torch.randn(self.num_chain,self.opts.z_size)
+                z=torch.randn(self.batch_size,self.num_chain,self.opts.z_size,1,1)
                 z=Variable(z.cuda(),requires_grad=True)
                 #NCHW
-                z=z.view(-1,self.opts.z_size,1,1)
+                # z=z.view(-1,self.opts.z_size,1,1)
                 gen_res=self.generator(z)
 
                 #D1
@@ -259,13 +263,13 @@ class CoopNets(nn.Module):
                     revised=self.langevin_dynamics_descriptor(gen_res)
                 #G1
                 if self.opts.langevin_step_num_gen>0:
-                    z=self.langevin_dynamics_generator(z,obs_data)
+                    z=self.langevin_dynamics_generator(z,revised)
 
                 #D2
                 obs_feature=self.descriptor(obs_data)
                 revised_feature=self.descriptor(revised)
 
-                des_loss=(revised_feature.mean(0)-obs_feature.mean(0)).mean()
+                des_loss=(revised_feature.mean(0)-obs_feature.mean(0)).sum()
 
                 des_optimizer.zero_grad()
                 des_loss.backward()
@@ -276,25 +280,27 @@ class CoopNets(nn.Module):
                 if self.opts.langevin_step_num_gen>0:
                     gen_res=self.generator(z)
                 # gen_res=gen_res.detach()
-                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*((revised-gen_res)**2).mean()
+                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*((revised-gen_res)**2).sum()
 
                 gen_optimizer.zero_grad()
                 gen_loss.backward()
                 gen_optimizer.step()
 
                 #Compute reconstruction loss
-                recon_loss=((revised-gen_res)**2).mean()
+                recon_loss=((revised-gen_res)**2).sum()
 
                 gen_loss_epoch.append(gen_loss.cpu().data)
                 des_loss_epoch.append(des_loss.cpu().data)
                 recon_loss_epoch.append(recon_loss.cpu().data)
 
-                # sample_results[i * batch_size:min((i + 1) * batch_size, len(train_data))] = syn
 
 
-            # saveSampleResults(obs_data.cpu().data, "%s/observed.png", col_num=self.opts.nCol)
+            saveSampleResults(obs_data.cpu().data, "%s/observed.png", col_num=(self.opts.batch_size)**0.5)
             saveSampleResults(revised.cpu().data, "%s/des_%03d.png" % (self.opts.output_dir, epoch+1), col_num=self.opts.nCol)
             saveSampleResults(gen_res.cpu().data, "%s/gen_%03d.png" % (self.opts.output_dir, epoch+1), col_num=self.opts.nCol)
+
+
+
 
             end_time = time.time()
             print('Epoch #{:d}/{:d}, des_loss: {:.4f}, gen_loss: {:.4f}, recon_loss: {:.4f}, '
