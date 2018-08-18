@@ -68,18 +68,18 @@ class Generator(nn.Module):
 class Descriptor_cifar(nn.Module):
     def __init__(self,opt):
         super(Descriptor_cifar,self).__init__()
-#        self.conv1=nn.Conv2d(3,64,kernel_size=5,stride=2,padding=1)
-#        self.conv2=nn.Conv2d(64,128,kernel_size=3,stride=2,padding=1)
-#        self.conv3=nn.Conv2d(128,256,kernel_size=3,stride=1,padding=1)
-#        self.fc=nn.Linear(8*8*256,100)
-#        self.leakyrelu=nn.LeakyReLU()
-       
-        self.conv1=nn.Conv2d(3,64,kernel_size=5,stride=2,padding=2)
-        self.conv2=nn.Conv2d(64,128,kernel_size=5,stride=2,padding=2)
-        self.conv3=nn.Conv2d(128,256,kernel_size=5,stride=2,padding=2)
-        self.conv4=nn.Conv2d(256,512,kernel_size=5,stride=2,padding=2)
-        self.fc=nn.Linear(2*2*512,opt.z_size)
+        self.conv1=nn.Conv2d(3,64,kernel_size=5,stride=2,padding=1)
+        self.conv2=nn.Conv2d(64,128,kernel_size=3,stride=2,padding=1)
+        self.conv3=nn.Conv2d(128,256,kernel_size=3,stride=1,padding=1)
+        self.fc=nn.Linear(8*8*256,opt.z_size)
         self.leakyrelu=nn.LeakyReLU()
+       
+        # self.conv1=nn.Conv2d(3,64,kernel_size=5,stride=2,padding=2)
+        # self.conv2=nn.Conv2d(64,128,kernel_size=5,stride=2,padding=2)
+        # self.conv3=nn.Conv2d(128,256,kernel_size=5,stride=2,padding=2)
+        # self.conv4=nn.Conv2d(256,512,kernel_size=5,stride=2,padding=2)
+        # self.fc=nn.Linear(2*2*512,opt.z_size)
+        # self.leakyrelu=nn.LeakyReLU()
 
 
     def forward(self,x):
@@ -91,8 +91,8 @@ class Descriptor_cifar(nn.Module):
         out=self.conv3(out)
         out=self.leakyrelu(out)
 
-        out=self.conv4(out)
-        out=self.leakyrelu(out)
+        # out=self.conv4(out)
+        # out=self.leakyrelu(out)
 
         out=out.view(out.size(0),-1)
         out=self.fc(out)
@@ -102,18 +102,7 @@ class Generator_cifar(nn.Module):
     def __init__(self,opt):
         super(Generator_cifar,self).__init__()
         self.opt=opt
-#        self.convt1=nn.ConvTranspose2d(100,256,kernel_size=4,stride=1,padding=0)
-#        self.convt2=nn.ConvTranspose2d(256,128,kernel_size=5,stride=2,padding=2,output_padding=1)
-#        self.convt3=nn.ConvTranspose2d(128,64,kernel_size=5,stride=2,padding=2,output_padding=1)
-#        self.convt4=nn.ConvTranspose2d(64,3,kernel_size=5,stride=2,padding=2,output_padding=1)
-#        self.bn1=nn.BatchNorm2d(256)
-#        self.bn2=nn.BatchNorm2d(128)
-#        self.bn3=nn.BatchNorm2d(64)
-#        self.leakyrelu=nn.LeakyReLU()
-#        self.tanh=nn.Tanh()
-
-        self.fc=nn.Linear(opt.z_size,2048)
-        self.convt1=nn.ConvTranspose2d(512,256,kernel_size=5,stride=2,padding=2,output_padding=1)
+        self.convt1=nn.ConvTranspose2d(opt.z_size,256,kernel_size=4,stride=1,padding=0)
         self.convt2=nn.ConvTranspose2d(256,128,kernel_size=5,stride=2,padding=2,output_padding=1)
         self.convt3=nn.ConvTranspose2d(128,64,kernel_size=5,stride=2,padding=2,output_padding=1)
         self.convt4=nn.ConvTranspose2d(64,3,kernel_size=5,stride=2,padding=2,output_padding=1)
@@ -123,14 +112,25 @@ class Generator_cifar(nn.Module):
         self.leakyrelu=nn.LeakyReLU()
         self.tanh=nn.Tanh()
 
+        # self.fc=nn.Linear(opt.z_size,2048)
+        # self.convt1=nn.ConvTranspose2d(512,256,kernel_size=5,stride=2,padding=2,output_padding=1)
+        # self.convt2=nn.ConvTranspose2d(256,128,kernel_size=5,stride=2,padding=2,output_padding=1)
+        # self.convt3=nn.ConvTranspose2d(128,64,kernel_size=5,stride=2,padding=2,output_padding=1)
+        # self.convt4=nn.ConvTranspose2d(64,3,kernel_size=5,stride=2,padding=2,output_padding=1)
+        # self.bn1=nn.BatchNorm2d(256)
+        # self.bn2=nn.BatchNorm2d(128)
+        # self.bn3=nn.BatchNorm2d(64)
+        # self.leakyrelu=nn.LeakyReLU()
+        # self.tanh=nn.Tanh()
+
     def forward(self,z):
         self.z=z
 
-        z=z.view(-1,self.opt.z_size)
-        out=self.fc(z)
-        out=out.reshape(-1,512,2,2)
+        # z=z.view(-1,self.opt.z_size)
+        # out=self.fc(z)
+        # out=out.reshape(-1,512,2,2)
 
-        out=self.convt1(out)
+        out=self.convt1(z)
         out=self.bn1(out)
         out=self.leakyrelu(out)
         out=self.convt2(out)
@@ -183,7 +183,7 @@ class CoopNets(nn.Module):
             #clone it and turn x into a leaf variable so the grad won't be thrown away
             x=Variable(x.data,requires_grad=True)
             x_feature=self.descriptor(x)
-            x_feature.backward(torch.ones(self.num_chain).cuda())
+            x_feature.backward(torch.ones(self.num_chain,self.opts.z_size).cuda())
             grad=x.grad
             # print ('x is : '+str(x[0]))
             # print ('x_grad is : '+str(grad[0]))
@@ -199,10 +199,10 @@ class CoopNets(nn.Module):
             print ('Loading Descriptor from '+self.opts.ckpt_des+'...')
         else:
             if self.opts.set == 'scene' or self.opts.set=='lsun':
-                self.descriptor=Descriptor().cuda()
+                self.descriptor=Descriptor(self.opts).cuda()
                 print ('Loading Descriptor without initialization...')
             elif self.opts.set=='cifar':
-                self.descriptor=Descriptor_cifar().cuda()
+                self.descriptor=Descriptor_cifar(self.opts).cuda()
                 print ('Loading Descriptor_cifar without initialization...')
             else:
                 raise NotImplementedError('The set should be either scene, lsun, or cifar')
@@ -212,14 +212,15 @@ class CoopNets(nn.Module):
             print ('Loading Generator from '+ self.opts.ckpt_gen+'...')
         else:
             if self.opts.set=='scene' or self.opts.set=='lsun':
-                self.generator=Generator().cuda()
+                self.generator=Generator(self.opts).cuda()
                 print ('Loading Generator without initialization...')
             elif self.opts.set=='cifar':
-                self.generator=Generator_cifar().cuda()
+                self.generator=Generator_cifar(self.opts).cuda()
                 print ('Loading Generator_cifar without initialization...')
             else:
                 raise NotImplementedError('The set should be either scene, lsun or cifar')
 
+        #TODO -add tensorboard & plot
 
 
         batch_size=self.opts.batch_size
@@ -241,6 +242,8 @@ class CoopNets(nn.Module):
             os.makedirs(self.opts.output_dir)
         logfile=open(self.opts.ckpt_dir+'/log','w+')
 
+        mse_loss=torch.nn.MSELoss(size_average=False,reduce=True)
+
 
         for epoch in range(self.opts.num_epoch):
             start_time=time.time()
@@ -249,10 +252,10 @@ class CoopNets(nn.Module):
                 if (i+1)*batch_size>len(train_data):
                     continue
                 obs_data=train_data[i*batch_size:min((i+1)*batch_size,len(train_data))]
-                # obs_data=Variable(torch.Tensor(obs_data).cuda())#,requires_grad=True
+                obs_data=Variable(torch.Tensor(obs_data).cuda())#,requires_grad=True
 
                 #G0
-                z=torch.randn(self.batch_size,self.num_chain,self.opts.z_size,1,1)
+                z=torch.randn(self.num_chain,self.opts.z_size,1,1)
                 z=Variable(z.cuda(),requires_grad=True)
                 #NCHW
                 # z=z.view(-1,self.opts.z_size,1,1)
@@ -277,25 +280,30 @@ class CoopNets(nn.Module):
 
 
                 #G2
+                ini_gen_res=gen_res.detach()
                 if self.opts.langevin_step_num_gen>0:
                     gen_res=self.generator(z)
                 # gen_res=gen_res.detach()
-                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*((revised-gen_res)**2).sum()
+                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*mse_loss(revised,gen_res.detach()) #((revised-gen_res)**2).sum()
 
                 gen_optimizer.zero_grad()
                 gen_loss.backward()
                 gen_optimizer.step()
 
                 #Compute reconstruction loss
-                recon_loss=((revised-gen_res)**2).sum()
+                recon_loss=mse_loss(revised,ini_gen_res) #((revised-gen_res)**2).sum()
 
                 gen_loss_epoch.append(gen_loss.cpu().data)
                 des_loss_epoch.append(des_loss.cpu().data)
                 recon_loss_epoch.append(recon_loss.cpu().data)
 
 
-
-            saveSampleResults(obs_data.cpu().data, "%s/observed.png", col_num=(self.opts.batch_size)**0.5)
+            try:
+                col_num=int((self.opts.batch_size)**0.5)
+                saveSampleResults(obs_data.cpu().data[:col_num*col_num], "%s/observed.png", col_num=col_num)
+            except:
+                print ('Error when saving obs_data. Skip.')
+                continue
             saveSampleResults(revised.cpu().data, "%s/des_%03d.png" % (self.opts.output_dir, epoch+1), col_num=self.opts.nCol)
             saveSampleResults(gen_res.cpu().data, "%s/gen_%03d.png" % (self.opts.output_dir, epoch+1), col_num=self.opts.nCol)
 
@@ -323,11 +331,16 @@ class CoopNets(nn.Module):
                 torch.save(self.generator, self.opts.ckpt_dir+'/gen_ckpt_{}.pth'.format(epoch))
         logfile.close()
 
-
-    # def test(self):
-
-
-
-
+    def test(self):
+        assert self.opts.ckpt_gen is not None, 'Please specify the path to the checkpoint.'
+        print ('Test on '+self.opts.ckpt_gen)
+        generator=torch.load(self.opts.ckpt_gen)
 
 
+        for i in range(self.opts.test_size):
+            print ('Generator [{:03d}/{:03d}] images...'.format(i+1,self.opts.test_size))
+            z=torch.randn(self.num_chain,self.opts.z_size,1,1)
+            z=Variable(z.cuda())
+            gen_res=generator(z)
+            saveSampleResults(gen_res.cpu().data, "%s/testres_gen_%03d.png" % (self.opts.output_dir, i+1),
+                              col_num=self.opts.nCol)
