@@ -168,9 +168,10 @@ class CoopNets(nn.Module):
             gen_loss=1.0/(2.0* self.opts.sigma_gen*self.opts.sigma_gen)*criterian(gen_res,obs)
             gen_loss.backward()
             grad=z.grad
-            if i==0:
-                print ('z is : '+str(z[0].view(1,-1)))
-                print ('z_grad is : '+str(grad[0].view(1,-1)))
+            # if self.opts.debug==1:
+            #     if i==0:
+            #         print ('z is : '+str(z[0].view(1,-1)))
+            #         print ('z_grad is : '+str(grad[0].view(1,-1)))
             z=z-0.5*self.opts.langevin_step_size_gen*self.opts.langevin_step_size_gen*(z+grad)
             if self.opts.with_noise == True:
                z+=self.opts.langevin_step_size_gen*noise
@@ -284,7 +285,7 @@ class CoopNets(nn.Module):
                 if self.opts.langevin_step_num_gen>0:
                     gen_res=self.generator(z)
                 # gen_res=gen_res.detach()
-                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*mse_loss(revised,gen_res.detach()) #((revised-gen_res)**2).sum()
+                gen_loss=0.5*self.opts.sigma_gen*self.opts.sigma_gen*mse_loss(gen_res,revised.detach()) #((revised-gen_res)**2).sum()
 
                 gen_optimizer.zero_grad()
                 gen_loss.backward()
@@ -338,9 +339,10 @@ class CoopNets(nn.Module):
 
         if not os.path.exists(self.opts.output_dir):
             os.makedirs(self.opts.output_dir)
+        print ('Save to %s ' % (self.opts.output_dir))
 
         for i in range(self.opts.test_size):
-            print ('Generator [{:03d}/{:03d}] images...'.format(i+1,self.opts.test_size))
+            print ('Generating [{:03d}/{:03d}] images...'.format(i+1,self.opts.test_size))
             z=torch.randn(self.num_chain,self.opts.z_size,1,1)
             z=Variable(z.cuda())
             gen_res=generator(z)
