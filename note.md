@@ -1,8 +1,6 @@
+## Some note on training CoopNet and measuring results
 
-##Some note on training CoopNet and measuring results
-
-
-###For training
+### For training
 
 1. About LR
 
