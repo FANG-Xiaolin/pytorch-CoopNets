@@ -1,6 +1,9 @@
+
 ##Some note on training CoopNet and measuring results
 
+
 ###For training
+
 1. About LR
 
 A small learning rate may result in some strange square texture like below 
