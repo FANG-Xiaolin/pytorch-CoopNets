@@ -1,4 +1,3 @@
-
 ## Some note on training CoopNet and measuring results
 
 ### For training
