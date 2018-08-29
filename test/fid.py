@@ -233,6 +233,7 @@ def calculate_fid_given_paths(paths, inception_path):
         return fid_value
 
 def get_fid_score(data_path, inception_path=None,gpu='0'):
+    os.environ['CUDA_VISIBLE_DEVICES']=gpu
     fid_value = calculate_fid_given_paths(data_path, inception_path)
     print ('===Calculating FID...===')
     print("===FID: ", fid_value+' ===')
