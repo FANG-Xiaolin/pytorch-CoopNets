@@ -303,25 +303,26 @@ class CoopNets(nn.Module):
                 des_loss_epoch.append(des_loss.cpu().data)
                 recon_loss_epoch.append(recon_loss.cpu().data)
 
+            # TO-FIX
             # if opts.incep_interval>0, compute inception score each [incep_interval] epochs.
-            if self.opts.incep_interval > 0:
-                import inception_model
-                if epoch % self.opts.incep_interval == 0:
-                    inception_log_file = os.path.join(self.opts.output_dir, 'inception.txt')
-                    inception_output_file = os.path.join(self.opts.output_dir, 'inception.mat')
-                    sample_results_partial = revised[:len(train_data)]
-                    sample_results_partial = np.minimum(1, np.maximum(-1, sample_results_partial))
-                    sample_results_partial = (sample_results_partial + 1) / 2 * 255
-                    # sample_results_list = sample_results.copy().swapaxes(1, 3)
-                    # sample_results_list = np.split(sample_results, len(sample_results), axis=0)
-                    m, s = get_inception_score(sample_results_partial)
-                    fo = open(inception_log_file, 'a')
-                    fo.write("Epoch {}: mean {}, sd {}".format(epoch, m, s))
-                    fo.close()
-                    inception_mean.append(m)
-                    inception_sd.append(s)
-                    sio.savemat(inception_output_file,
-                                {'mean': np.asarray(inception_mean), 'sd': np.asarray(inception_sd)})
+            # if self.opts.incep_interval > 0:
+            #     import inception_model
+            #     if epoch % self.opts.incep_interval == 0:
+            #         inception_log_file = os.path.join(self.opts.output_dir, 'inception.txt')
+            #         inception_output_file = os.path.join(self.opts.output_dir, 'inception.mat')
+            #         sample_results_partial = revised[:len(train_data)]
+            #         sample_results_partial = np.minimum(1, np.maximum(-1, sample_results_partial))
+            #         sample_results_partial = (sample_results_partial + 1) / 2 * 255
+            #         # sample_results_list = sample_results.copy().swapaxes(1, 3)
+            #         # sample_results_list = np.split(sample_results, len(sample_results), axis=0)
+            #         m, s = get_inception_score(sample_results_partial)
+            #         fo = open(inception_log_file, 'a')
+            #         fo.write("Epoch {}: mean {}, sd {}".format(epoch, m, s))
+            #         fo.close()
+            #         inception_mean.append(m)
+            #         inception_sd.append(s)
+            #         sio.savemat(inception_output_file,
+            #                     {'mean': np.asarray(inception_mean), 'sd': np.asarray(inception_sd)})
 
             try:
                 col_num = self.opts.nCol
@@ -455,7 +456,7 @@ class CoopNets(nn.Module):
                                       col_num=self.opts.nCol,margin_syn=0)
 
             print ('===Image generation done.===')
-            get_fid_score([self.opts.output_dir,'../test/fid_stats_cifar10_train.npz'])
+            get_fid_score([self.opts.output_dir,'./test/fid_stats_cifar10_train.npz'])
 
 
         # Generate sample images
