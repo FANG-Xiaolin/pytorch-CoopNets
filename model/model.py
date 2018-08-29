@@ -371,7 +371,7 @@ class CoopNets(nn.Module):
         if self.opts.test_inception:
             assert self.opts.dataset_size is not None, 'Please specify the size of training dataset in order to compute accurate inception score'
             from test.inception_model import get_inception_score
-            import scipy.io as sio
+            from scipy import io as sio
 
             test_size = int(np.ceil(self.opts.dataset_size / self.opts.nRow / self.opts.nCol))
             self.num_chain = self.opts.nRow * self.opts.nCol
@@ -379,7 +379,7 @@ class CoopNets(nn.Module):
             inception_log_file = os.path.join(self.opts.output_dir, 'inception.txt')
             inception_output_file = os.path.join(self.opts.output_dir, 'inception.mat')
 
-            sample_list=np.ones(self.opts.dataset_size,3,self.opts.img_size,self.opts.img_size)
+            sample_list=np.ones((self.opts.dataset_size,3,self.opts.img_size,self.opts.img_size))
 
             print('===Generated images saved to %s ===' % (self.opts.output_dir))
 
@@ -397,11 +397,11 @@ class CoopNets(nn.Module):
                     gen_res = gen_res - 0.5 * self.opts.langevin_step_size_des * self.opts.langevin_step_size_des * \
                                         (gen_res / self.opts.sigma_des / self.opts.sigma_des - grad)
 
-                gen_res = gen_res.detach().cpu().numpy()
+                gen_res = gen_res.detach().cpu()
                 for img_no, img in enumerate(gen_res):
                     if i*self.num_chain+img_no+1>self.opts.dataset_size:
                         break
-                    print('Generating {:05d}/{:05d}'.format(i*self.num_chain+img_no+1, self.opts.dataset_size))
+                    print ('Generating {:05d}/{:05d}'.format(i*self.num_chain+img_no+1, self.opts.dataset_size))
                     saveSampleResults(img[None,:,:,:], "%s/testres_gen_%03d.png" % (self.opts.output_dir,
                                                                                    i * self.num_chain + img_no + 1),
                                       col_num=self.opts.nCol, margin_syn=0)
