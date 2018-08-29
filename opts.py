@@ -43,7 +43,7 @@ class opts():
         self.parser.add_argument('-ckpt_gen', default=None, help='load checkpoint for generator')
         self.parser.add_argument('-sigma_des', type=float, default=0.016, help='sigma of reference distribution')
         self.parser.add_argument('-langevin_step_num_des', type=int, default=10, help='langevin step number for descriptor')
-        self.parser.add_argument('-langevin_step_size_des', type=float, default=0.002, help='langevin step size for descriptor')
+        self.parser.add_argument('-langevin_step_size_des', type=float, default=0.001, help='langevin step size for descriptor')
         self.parser.add_argument('-lr_des', type=float, default=0.01,help='learning rate of descriptor')
         self.parser.add_argument('-beta1_des', type=float, default=0.5,help='beta of Adam for descriptor')
 

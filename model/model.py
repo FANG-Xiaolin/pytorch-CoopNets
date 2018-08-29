@@ -478,7 +478,7 @@ class CoopNets(nn.Module):
                     gen_res = gen_res - 0.5 * self.opts.langevin_step_size_des * self.opts.langevin_step_size_des * \
                                         (gen_res / self.opts.sigma_des / self.opts.sigma_des - grad)
 
-                saveSampleResults(gen_res.cpu().data, "%s/testres_gen_%03d.png" % (self.opts.output_dir, i + 1),
+                saveSampleResults(gen_res.cpu().data, "%s/testres_%03d.png" % (self.opts.output_dir, i + 1),
                                   col_num=self.opts.nCol)
 
 
