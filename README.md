@@ -48,16 +48,18 @@ are from the author's original implementation.
 Specify the path to checkpoint in the command line. By default, the result will 
 be saved to `./result_images`, or you can change it by `-output_dir /path/to/test-result`.
 
-Please make sure the `langevin_step_size` is the same as your training setting.
+Please make sure the `langevin_step_size` is the same as your training setting. For checkpoint
+provided in the `test` folder, langevin_step_num is 8
 
 #### FID
 E.g. 
     
-    $ python main.py -test -test_fid -img_size 32 -ckpt_gen ./test/ckpt_gen.pth -ckpt_des ./test/ckpt_des.pth -output_dir ./test-fid -langevin_step_num_des 8
+    $ python main.py -test -test_fid -img_size 32 -ckpt_gen ./test/ckpt_gen_cifar.pth -ckpt_des ./test/ckpt_des_cifar.pth -output_dir ./test-fid -langevin_step_num_des 8
 
 #### Inception Score
 E.g.
 
+    $ python main.py -test -test_inception -dataset_size 60000 -img_size 32 -ckpt_gen ./test/ckpt_gen_cifar.pth -ckpt_des ./test/ckpt_des_cifar.pth -output_dir ./test-incep -langevin_step_num_des 8
 
 
 
@@ -111,22 +113,25 @@ Details about the flags can be seen by
     
     
 ## Result
-Below is the result_image after training on `alp`(about 2000 images) within hundreds of epochs.
-
-![result-alp](example/alp_result.png)
-
-##### Result on `desert-sand`(about 5000 images) and `hotel-room`(about 5000 images) subset of MIT-Place Dataset
-
-![result-desert](example/desert-sand_result.png)
-
-![result-hotel](example/hotel-room_result.png)
-
 
 #### Result on `cifar10`(60k images)
 
 ![result-cifar1](example/cifar10-result1.png)
 
 ![result-cifar2](example/cifar10-result2.png)
+
+
+##### Result on `desert-sand`(about 5k images) and `hotel-room`(about 5k images) subset of MIT-Place Dataset
+
+![result-desert](example/desert-sand_result.png)
+
+![result-hotel](example/hotel-room_result.png)
+
+
+Below is the result_image after training on `alp`(about 2k images) within hundreds of epochs.
+
+![result-alp](example/alp_result.png)
+
 
 
 ## Reference
