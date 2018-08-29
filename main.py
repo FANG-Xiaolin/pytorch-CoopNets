@@ -4,7 +4,7 @@ from opts import opts
 def main():
     opt=opts().parse()
     model=CoopNets(opt)
-    if opt.test:
+    if opt.test or opt.test_inception:
         model.test()
     else:
         model.train()

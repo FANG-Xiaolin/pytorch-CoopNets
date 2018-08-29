@@ -8,11 +8,16 @@ class opts():
     def init(self):
         self.parser.add_argument('-num_epoch', type=int, default=300, help='training epochs')
         self.parser.add_argument('-batch_size', type=int, default=100, help='training batch size')
-        self.parser.add_argument('-test_size', type=int, default=1, help='How many images to generate during testing')
-        self.parser.add_argument('-test', action = 'store_true', help='add `-test` for testing')
         self.parser.add_argument('-nRow', type=int, default=12, help='how many rows of images in the output')
         self.parser.add_argument('-nCol', type=int, default=12, help='how many columns of images in the output')
         self.parser.add_argument('-img_size', type=int, default=64, help='output image size')
+
+        #test setting
+        self.parser.add_argument('-test_size', type=int, default=1, help='How many images to generate during testing')
+        self.parser.add_argument('-test', action = 'store_true', help='add `-test` for testing')
+        self.parser.add_argument('-test_inception', action='store_true', help='True to compute inception score')
+        self.parser.add_argument('-test_fid', action='store_true', help='True to compute FID')
+        self.parser.add_argument('-dataset_size', type=int, default=None, help='if compute inception score, please specify the size of training dataset')
 
         self.parser.add_argument('-z_size', type=int, default=100, help='dimension of latent variable sample from latent space')
         self.parser.add_argument('-category', default='alp', help='training category')
@@ -23,7 +28,8 @@ class opts():
         self.parser.add_argument('-log_epoch', type=int, default=50, help='save checkpoint each `log_epoch` epochs')
 
         self.parser.add_argument('-set', default='scene', help='which dataset, scene/cifar')
-        self.parser.add_argument('-with_noise', type=bool, default=True, help='add noise during the langevin or not')
+        self.parser.add_argument('-with_noise', type=bool, default=False, help='add noise during the langevin or not')
+        self.parser.add_argument('-incep_interval', type=int, default=0, help='intervals to compute inception score. 0 for not computing')
 
         #Generator Parameters
         self.parser.add_argument('-ckpt_des', default=None, help='load checkpoint for descriptor')
