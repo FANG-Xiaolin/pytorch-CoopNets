@@ -10,8 +10,8 @@ if not os.path.exists(outputdir):
     os.makedirs(outputdir)
 
 def cell2img(cell_image, image_size=32, margin_syn=0):
-    num_cols = nrow#cell_image.shape[1] // image_size
-    num_rows = nrow#cell_image.shape[0] // image_size
+    num_cols = nrow #cell_image.shape[1] // image_size
+    num_rows = nrow #cell_image.shape[0] // image_size
     images = np.zeros((num_cols * num_rows, image_size, image_size, 3))
     for ir in range(num_rows):
         for ic in range(num_cols):

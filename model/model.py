@@ -303,7 +303,7 @@ class CoopNets(nn.Module):
                 des_loss_epoch.append(des_loss.cpu().data)
                 recon_loss_epoch.append(recon_loss.cpu().data)
 
-            # TO-FIX
+            # TO-FIX (confliction between pytorch and tf)
             # if opts.incep_interval>0, compute inception score each [incep_interval] epochs.
             # if self.opts.incep_interval > 0:
             #     import inception_model
@@ -367,118 +367,32 @@ class CoopNets(nn.Module):
         if not os.path.exists(self.opts.output_dir):
             os.makedirs(self.opts.output_dir)
 
-        # Compute inception score
-        if self.opts.test_inception:
-            assert self.opts.dataset_size is not None, 'Please specify the size of training dataset in order to compute accurate inception score'
-            from test.inception_model import get_inception_score
-            from scipy import io as sio
+        test_batch=int(np.ceil(self.opts.test_size/self.opts.nRow/self.opts.nCol))
+        print('===Generated images saved to %s ===' % (self.opts.output_dir))
 
-            test_size = int(np.ceil(self.opts.dataset_size / self.opts.nRow / self.opts.nCol))
-            self.num_chain = self.opts.nRow * self.opts.nCol
+        for i in range(test_batch):
+            z = torch.randn(self.num_chain, self.opts.z_size, 1, 1)
+            z = Variable(z.cuda())
+            gen_res = generator(z)
 
-            inception_log_file = os.path.join(self.opts.output_dir, 'inception.txt')
-            inception_output_file = os.path.join(self.opts.output_dir, 'inception.mat')
-
-            sample_list=np.ones((self.opts.dataset_size,3,self.opts.img_size,self.opts.img_size))
-
-            print('===Generated images saved to %s ===' % (self.opts.output_dir))
-
-            for i in range(test_size):
-                z = torch.randn(self.num_chain, self.opts.z_size, 1, 1)
-                z = Variable(z.cuda())
-                gen_res = generator(z)
-
-                for s in range(self.opts.langevin_step_num_des):
-                    # clone it and turn x into a leaf variable so the grad won't be thrown away
-                    gen_res = Variable(gen_res.data, requires_grad=True)
-                    gen_res_feature = descriptor(gen_res)
-                    gen_res_feature.backward(torch.ones(self.num_chain, self.opts.z_size).cuda())
-                    grad = gen_res.grad
-                    gen_res = gen_res - 0.5 * self.opts.langevin_step_size_des * self.opts.langevin_step_size_des * \
-                                        (gen_res / self.opts.sigma_des / self.opts.sigma_des - grad)
-
-                gen_res = gen_res.detach().cpu()
-                for img_no, img in enumerate(gen_res):
-                    if i*self.num_chain+img_no+1>self.opts.dataset_size:
-                        break
-                    print ('Generating {:05d}/{:05d}'.format(i*self.num_chain+img_no+1, self.opts.dataset_size))
-                    saveSampleResults(img[None,:,:,:], "%s/testres_gen_%03d.png" % (self.opts.output_dir,
-                                                                                   i * self.num_chain + img_no + 1),
-                                      col_num=self.opts.nCol, margin_syn=0)
-                    img=np.minimum(1, np.maximum(-1, img))
-                    img = (img + 1) / 2 * 255
-                    sample_list[i*self.num_chain+img_no]=img
-
-            print('===Image generation done.===')
-            descriptor.cpu()
-            generator.cpu()
-            print('===Calculating Inception Score...===')
-            m, s = get_inception_score(torch.Tensor(sample_list).cuda())
-            fo = open(inception_log_file, 'a')
-            fo.write("=== Size: {}, model: {}, mean {}, sd {} ===".format(self.opts.dataset_size, self.opts.ckpt_gen, m, s))
-            fo.close()
-            sio.savemat(inception_output_file, {'mean': np.asarray(m), 'sd': np.asarray(s)})
-
-        elif self.opts.test_fid:
-            # Compute FID on 50000 images by default
-            fid_image_num=50000
-            # self.opts.nRow=self.opts.nCol=30
-            self.opts.test_size=int(np.ceil(fid_image_num/self.opts.nRow/self.opts.nCol))
-            self.num_chain=self.opts.nRow*self.opts.nCol
-
-            from test.fid import get_fid_score
-            import scipy.io as sio
-
-            print('===Generated images saved to %s ===' % (self.opts.output_dir))
-
-            for i in range(self.opts.test_size):
-                z = torch.randn(self.num_chain, self.opts.z_size, 1, 1)
-                z = Variable(z.cuda())
-                gen_res = generator(z)
-
-                for s in range(self.opts.langevin_step_num_des):
-                    # clone it and turn x into a leaf variable so the grad won't be thrown away
-                    gen_res = Variable(gen_res.data, requires_grad=True)
-                    gen_res_feature = descriptor(gen_res)
-                    gen_res_feature.backward(torch.ones(self.num_chain, self.opts.z_size).cuda())
-                    grad = gen_res.grad
-                    gen_res = gen_res - 0.5 * self.opts.langevin_step_size_des * self.opts.langevin_step_size_des * \
-                                        (gen_res / self.opts.sigma_des / self.opts.sigma_des - grad)
+            for s in range(self.opts.langevin_step_num_des):
+                # clone it and turn x into a leaf variable so the grad won't be thrown away
+                gen_res = Variable(gen_res.data, requires_grad=True)
+                gen_res_feature = descriptor(gen_res)
+                gen_res_feature.backward(torch.ones(self.num_chain, self.opts.z_size).cuda())
+                grad = gen_res.grad
+                gen_res = gen_res - 0.5 * self.opts.langevin_step_size_des * self.opts.langevin_step_size_des * \
+                                    (gen_res / self.opts.sigma_des / self.opts.sigma_des - grad)
 
 
-                gen_res=gen_res.detach().cpu()
-                for img_no,img in enumerate(gen_res):
-                    if i*self.num_chain+img_no+1>fid_image_num:
-                        break
-                    print('Generating {:05d}/{:05d}'.format(i*self.num_chain+img_no+1,fid_image_num))
-                    saveSampleResults(img[None,:,:,:], "%s/testres_gen_%03d.png" % (self.opts.output_dir,
-                                                                                   i*self.num_chain+img_no+1 ),
-                                      col_num=self.opts.nCol,margin_syn=0)
+            gen_res=gen_res.detach().cpu()
+            for img_no,img in enumerate(gen_res):
+                if i*self.num_chain+img_no+1>self.opts.test_size:
+                    break
+                print('Generating {:05d}/{:05d}'.format(i*self.num_chain+img_no+1,self.opts.test_size))
+                saveSampleResults(img[None,:,:,:], "%s/testres_%03d.png" % (self.opts.output_dir,
+                                                                               i*self.num_chain+img_no+1 ),
+                                  col_num=self.opts.nCol,margin_syn=0)
 
-            print ('===Image generation done.===')
-            get_fid_score([self.opts.output_dir,'./test/fid_stats_cifar10_train.npz'])
-
-
-        # Generate sample images
-        else:
-            print('Save to %s ' % (self.opts.output_dir))
-
-            for i in range(self.opts.test_size):
-                print('Generating [{:03d}/{:03d}] images...'.format(i + 1, self.opts.test_size))
-                z = torch.randn(self.num_chain, self.opts.z_size, 1, 1)
-                z = Variable(z.cuda())
-                gen_res = generator(z)
-
-                for s in range(self.opts.langevin_step_num_des):
-                    # clone it and turn x into a leaf variable so the grad won't be thrown away
-                    gen_res = Variable(gen_res.data, requires_grad=True)
-                    gen_res_feature = descriptor(gen_res)
-                    gen_res_feature.backward(torch.ones(self.num_chain, self.opts.z_size).cuda())
-                    grad = gen_res.grad
-                    gen_res = gen_res - 0.5 * self.opts.langevin_step_size_des * self.opts.langevin_step_size_des * \
-                                        (gen_res / self.opts.sigma_des / self.opts.sigma_des - grad)
-
-                saveSampleResults(gen_res.cpu().data, "%s/testres_%03d.png" % (self.opts.output_dir, i + 1),
-                                  col_num=self.opts.nCol)
-
+        print ('===Image generation done.===')
 

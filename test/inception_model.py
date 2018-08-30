@@ -201,14 +201,14 @@ def cell2img(cell_image, image_size=32, margin_syn=0):
 
 
 def main():
-    dir='./test'
+    dir = './test-inception'
     from model.utils.data_io import DataSet
     imglist=DataSet(dir,image_size=32)
     img=imglist.data()
     imgd=((img+1.0)/2.0*255)
     imglist=imgd
     m,s=get_inception_score(imglist)
-    print ("Size: {}, mean {}, sd {}".format(len(imglist), m, s))
+    print ("=== Size: {}, mean {}, sd {} ===".format(len(imglist), m, s))
 
 if __name__ == '__main__':
     main()
