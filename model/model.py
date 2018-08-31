@@ -264,7 +264,6 @@ class CoopNets(nn.Module):
                 z = torch.randn(self.num_chain, self.opts.z_size, 1, 1)
                 z = Variable(z.cuda(), requires_grad=True)
                 # NCHW
-                # z=z.view(-1,self.opts.z_size,1,1)
                 gen_res = self.generator(z)
 
                 # D1
@@ -290,14 +289,14 @@ class CoopNets(nn.Module):
                     gen_res = self.generator(z)
                 # gen_res=gen_res.detach()
                 gen_loss = 0.5 * self.opts.sigma_gen * self.opts.sigma_gen * mse_loss(gen_res,
-                                                                                      revised.detach())  # ((revised-gen_res)**2).sum()
+                                                                                      revised.detach())
 
                 gen_optimizer.zero_grad()
                 gen_loss.backward()
                 gen_optimizer.step()
 
                 # Compute reconstruction loss
-                recon_loss = mse_loss(revised, ini_gen_res)  # ((revised-gen_res)**2).sum()
+                recon_loss = mse_loss(revised, ini_gen_res)
 
                 gen_loss_epoch.append(gen_loss.cpu().data)
                 des_loss_epoch.append(des_loss.cpu().data)
