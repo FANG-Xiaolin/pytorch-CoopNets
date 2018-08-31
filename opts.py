@@ -15,6 +15,7 @@ class opts():
         #test setting
         self.parser.add_argument('-test_size', type=int, default=1, help='How many images to generate during testing')
         self.parser.add_argument('-test', action = 'store_true', help='add `-test` for testing')
+        self.parser.add_argument('-score', action = 'store_true', help='add `-score` for reporting scores')
 
         self.parser.add_argument('-z_size', type=int, default=100, help='dimension of latent variable sample from latent space')
         self.parser.add_argument('-category', default='alp', help='training category')

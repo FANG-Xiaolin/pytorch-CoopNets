@@ -12,6 +12,7 @@ Checkout the original tensorflow implementation <a href="https://github.com/zilo
 - numpy
 - tensorflow-gpu (if you are trying to get inception score or FID)
 
+
 ## Installation
 Clone the repository
 
@@ -42,8 +43,8 @@ E.g. Generate 10 examples, each with 20x20 images by the following line.
 
 Load the pretrained model and generate sample images, then evaluate by 
 <a href="http://papers.nips.cc/paper/6125-improved-techniques-for-training-gans.pdf">inception_score</a> or 
-<a href="https://arxiv.org/pdf/1706.08500.pdf">FID</a>. The code to calculate scores
-are from the author's original implementation.
+<a href="https://arxiv.org/pdf/1706.08500.pdf">FID</a>. The code to evaluate scores
+are from corresponding authors' original implementation.
 
 Specify the path to checkpoint in the command line. By default, the result will 
 be saved to `./result_images`, or you can change it by `-output_dir /path/to/test-result`.
@@ -51,15 +52,28 @@ be saved to `./result_images`, or you can change it by `-output_dir /path/to/tes
 Please make sure the `langevin_step_size` is the same as your training setting. For checkpoint
 provided in the `test` folder, langevin_step_num is 8
 
+***Tips***
+
+If you are encountered error like 
+
+` Cannot feed value of shape (50, 32, 32, 3) for Tensor 'FID_Inception
+_Net/ExpandDims:0', which has shape '(1, ?, ?, 3)'`
+
+try upgrade your tf version.
+
 #### FID
-E.g. 
-    
-    $ python main.py -test -test_fid -img_size 32 -ckpt_gen ./test/ckpt_gen_cifar.pth -ckpt_des ./test/ckpt_des_cifar.pth -output_dir ./test-fid -langevin_step_num_des 8
+From `test` directory, 
+
+    $ bash test-cifar-fid.sh
 
 #### Inception Score
-E.g.
 
-    $ python main.py -test -test_inception -dataset_size 60000 -img_size 32 -ckpt_gen ./test/ckpt_gen_cifar.pth -ckpt_des ./test/ckpt_des_cifar.pth -output_dir ./test-incep -langevin_step_num_des 8
+From `test` directory
+
+    $ bash test-cifar-inception.sh
+    
+
+Generation and evaluation process are seperated to avoid conflictions between pytorch and tf.
 
 
 
@@ -99,7 +113,7 @@ Train the model on ***alp*** dataset  by
 E.g. 
 Train the model on ***cifar10*** dataset by
 
-    $ python main.py -set cifar -category cifar -img_size 32 -lr_des 0.003 -langevin_step_size_des 0.001 -langevin_step_num_des 15 -sigma_des 0.016 -num_epoch 500 -log_epoch 50 -batch_size 300 -nRow 30 -nCol 30 -data_path ./data/scene/
+    $ python main.py -set cifar -category cifar -img_size 32 -lr_des 0.003 -langevin_step_size_des 0.001 -langevin_step_num_des 10 -sigma_des 0.016 -num_epoch 500 -log_epoch 50 -batch_size 300 -nRow 30 -nCol 30 -data_path ./data/scene/
     
 
 By default, the result will be save to `./result_images`, the checkpoints and 

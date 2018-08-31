@@ -360,8 +360,8 @@ class CoopNets(nn.Module):
         assert self.opts.ckpt_gen is not None, 'Please specify the path to the checkpoint of generator.'
         assert self.opts.ckpt_des is not None, 'Please specify the path to the checkpoint of generator.'
         print('===Test on ' + self.opts.ckpt_gen + ' and ' + self.opts.ckpt_des+' ===')
-        generator = torch.load(self.opts.ckpt_gen)
-        descriptor = torch.load(self.opts.ckpt_des)
+        generator = torch.load(self.opts.ckpt_gen).eval()
+        descriptor = torch.load(self.opts.ckpt_des).eval()
 
         if not os.path.exists(self.opts.output_dir):
             os.makedirs(self.opts.output_dir)
@@ -384,14 +384,21 @@ class CoopNets(nn.Module):
                                     (gen_res / self.opts.sigma_des / self.opts.sigma_des - grad)
 
 
-            gen_res=gen_res.detach().cpu()
-            for img_no,img in enumerate(gen_res):
-                if i*self.num_chain+img_no+1>self.opts.test_size:
-                    break
-                print('Generating {:05d}/{:05d}'.format(i*self.num_chain+img_no+1,self.opts.test_size))
-                saveSampleResults(img[None,:,:,:], "%s/testres_%03d.png" % (self.opts.output_dir,
-                                                                               i*self.num_chain+img_no+1 ),
-                                  col_num=self.opts.nCol,margin_syn=0)
+            if self.opts.score:
+                gen_res=gen_res.detach().cpu()
+                for img_no,img in enumerate(gen_res):
+                    if i*self.num_chain+img_no+1>self.opts.test_size:
+                        break
+                    print('Generating {:05d}/{:05d}'.format(i*self.num_chain+img_no+1,self.opts.test_size))
+                    saveSampleResults(img[None,:,:,:], "%s/testres_%03d.png" % (self.opts.output_dir,
+                                                                                   i*self.num_chain+img_no+1 ),
+                                      col_num=1,margin_syn=0)
+            else:
+                gen_res = gen_res.detach().cpu()
+                print('Generating {:05d}/{:05d}'.format(i+1, test_batch))
+                saveSampleResults(gen_res, "%s/testres_%03d.png" % (self.opts.output_dir,
+                                                                i+1),
+                                      col_num=self.opts.nCol, margin_syn=0)
 
         print ('===Image generation done.===')
 
