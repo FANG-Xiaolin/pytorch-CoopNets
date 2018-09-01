@@ -49,9 +49,6 @@ are from corresponding authors' original implementation.
 Specify the path to checkpoint in the command line. By default, the result will 
 be saved to `./result_images`, or you can change it by `-output_dir /path/to/test-result`.
 
-Please make sure the `langevin_step_size` is the same as your training setting. For checkpoint
-provided in the `test` folder, langevin_step_num is 8
-
 ***Tips***
 
 If you are encountered error like 
