@@ -37,7 +37,7 @@ be saved to `./result_images`, or you can change it by `-output_dir /path/to/tes
 E.g. Generate 10 examples, each with 20x20 images by the following line.
 
 
-    $ python main.py -test -output_dir ./test_res -ckpt_gen ./test/ckpt_gen_cifar.pth -ckpt_des ./test/ckpt_des_cifar.pth -test_size 10 -nRow 20 -nCol 20 -langevin_step_num_des 8
+    $ python main.py -test -output_dir ./test_res -ckpt_gen ./test/ckpt_gen_cifar.pth -ckpt_des ./test/ckpt_des_cifar.pth -test_size 4000 -nRow 20 -nCol 20 -langevin_step_num_des 8
 
 ## Testing
 
