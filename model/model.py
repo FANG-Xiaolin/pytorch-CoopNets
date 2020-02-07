@@ -171,10 +171,6 @@ class CoopNets(nn.Module):
             gen_loss = 1.0 / (2.0 * self.opts.sigma_gen * self.opts.sigma_gen) * criterian(gen_res, obs)
             gen_loss.backward()
             grad = z.grad
-            # if self.opts.debug==1:
-            #     if i==0:
-            #         print ('z is : '+str(z[0].view(1,-1)))
-            #         print ('z_grad is : '+str(grad[0].view(1,-1)))
             z = z - 0.5 * self.opts.langevin_step_size_gen * self.opts.langevin_step_size_gen * (z + grad)
             if self.opts.with_noise == True:
                 z += self.opts.langevin_step_size_gen * noise
@@ -189,8 +185,6 @@ class CoopNets(nn.Module):
             x_feature = self.descriptor(x)
             x_feature.backward(torch.ones(self.num_chain, self.opts.z_size).cuda())
             grad = x.grad
-            # print ('x is : '+str(x[0]))
-            # print ('x_grad is : '+str(grad[0]))
             x = x - 0.5 * self.opts.langevin_step_size_des * self.opts.langevin_step_size_des * \
                     (x / self.opts.sigma_des / self.opts.sigma_des - grad)
             if self.opts.with_noise:
@@ -223,9 +217,6 @@ class CoopNets(nn.Module):
                 print('Loading Generator_cifar without initialization...')
             else:
                 raise NotImplementedError('The set should be either scene, lsun or cifar')
-
-        # TODO -add tensorboard & plot
-
 
         batch_size = self.opts.batch_size
         if self.opts.set == 'scene' or self.opts.set == 'cifar':
@@ -287,8 +278,7 @@ class CoopNets(nn.Module):
                 ini_gen_res = gen_res.detach()
                 if self.opts.langevin_step_num_gen > 0:
                     gen_res = self.generator(z)
-                # gen_res=gen_res.detach()
-                gen_loss = 0.5 * self.opts.sigma_gen * self.opts.sigma_gen * mse_loss(gen_res,
+                gen_loss = 1.0 / (2.0 * self.opts.sigma_gen * self.opts.sigma_gen) * mse_loss(gen_res,
                                                                                       revised.detach())
 
                 gen_optimizer.zero_grad()
@@ -301,27 +291,6 @@ class CoopNets(nn.Module):
                 gen_loss_epoch.append(gen_loss.cpu().data)
                 des_loss_epoch.append(des_loss.cpu().data)
                 recon_loss_epoch.append(recon_loss.cpu().data)
-
-            # TO-FIX (confliction between pytorch and tf)
-            # if opts.incep_interval>0, compute inception score each [incep_interval] epochs.
-            # if self.opts.incep_interval > 0:
-            #     import inception_model
-            #     if epoch % self.opts.incep_interval == 0:
-            #         inception_log_file = os.path.join(self.opts.output_dir, 'inception.txt')
-            #         inception_output_file = os.path.join(self.opts.output_dir, 'inception.mat')
-            #         sample_results_partial = revised[:len(train_data)]
-            #         sample_results_partial = np.minimum(1, np.maximum(-1, sample_results_partial))
-            #         sample_results_partial = (sample_results_partial + 1) / 2 * 255
-            #         # sample_results_list = sample_results.copy().swapaxes(1, 3)
-            #         # sample_results_list = np.split(sample_results, len(sample_results), axis=0)
-            #         m, s = get_inception_score(sample_results_partial)
-            #         fo = open(inception_log_file, 'a')
-            #         fo.write("Epoch {}: mean {}, sd {}".format(epoch, m, s))
-            #         fo.close()
-            #         inception_mean.append(m)
-            #         inception_sd.append(s)
-            #         sio.savemat(inception_output_file,
-            #                     {'mean': np.asarray(inception_mean), 'sd': np.asarray(inception_sd)})
 
             try:
                 col_num = self.opts.nCol
@@ -376,7 +345,6 @@ class CoopNets(nn.Module):
             gen_res = generator(z)
 
             for s in range(self.opts.langevin_step_num_des):
-                # clone it and turn x into a leaf variable so the grad won't be thrown away
                 gen_res = Variable(gen_res.data, requires_grad=True)
                 gen_res_feature = descriptor(gen_res)
                 gen_res_feature.backward(torch.ones(self.num_chain, self.opts.z_size).cuda())
